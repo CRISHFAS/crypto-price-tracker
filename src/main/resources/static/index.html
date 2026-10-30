@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crypto Price Tracker</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#14171c;--muted:#6b7380;--up:#12a150;--down:#d93434;--border:#e3e6eb}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--card:#161b22;--text:#e6edf3;--muted:#8b949e;--up:#3fb950;--down:#f85149;--border:#30363d}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
+h1{font-size:1.2rem;margin:0}
+.status{display:flex;align-items:center;gap:.5rem;color:var(--muted);font-size:.9rem}
+.dot{width:.6rem;height:.6rem;border-radius:50%;background:var(--down)}
+.dot.on{background:var(--up)}
+main{max-width:960px;margin:0 auto;padding:1.5rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;transition:box-shadow .3s}
+.card.up{box-shadow:0 0 0 2px var(--up)}
+.card.down{box-shadow:0 0 0 2px var(--down)}
+.top{display:flex;justify-content:space-between;align-items:baseline}
+.sym{font-weight:700;letter-spacing:.04em}
+.chg{font-size:.9rem;font-variant-numeric:tabular-nums;color:var(--muted)}
+.chg.up{color:var(--up)}.chg.down{color:var(--down)}
+.price{font-size:1.8rem;font-weight:700;margin:.4rem 0;font-variant-numeric:tabular-nums}
+.spark{width:100%;height:48px;display:block}
+.spark polyline{fill:none;stroke:var(--muted);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.time{color:var(--muted);font-size:.8rem;margin-top:.3rem}
+.empty{color:var(--muted);text-align:center;padding:3rem 0}
+footer{color:var(--muted);font-size:.8rem;text-align:center;padding:1.5rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>Crypto Price Tracker</h1>
+  <div class="status"><span id="dot" class="dot"></span><span id="statusText">Conectando…</span></div>
+</header>
+<main>
+  <p id="empty" class="empty">Esperando precios… ¿está corriendo el simulador?</p>
+  <section id="grid" class="grid"></section>
+</main>
+<footer>Spring Boot · Apache Kafka · Server-Sent Events</footer>
+<script>
+const grid = document.getElementById('grid');
+const empty = document.getElementById('empty');
+const dot = document.getElementById('dot');
+const statusText = document.getElementById('statusText');
+const cards = {};
+const MAX_POINTS = 40;
+const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+function makeCard(symbol) {
+  const el = document.createElement('article');
+  el.className = 'card';
+  el.innerHTML = '<div class="top"><span class="sym"></span><span class="chg"></span></div>' +
+    '<div class="price"></div>' +
+    '<svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline points=""/></svg>' +
+    '<div class="time"></div>';
+  el.querySelector('.sym').textContent = symbol;
+  grid.appendChild(el);
+  return { el, history: [], prev: null };
+}
+
+function drawSpark(card) {
+  const h = card.history;
+  const min = Math.min(...h), max = Math.max(...h), range = (max - min) || 1;
+  const pts = h.map((v, i) => {
+    const x = h.length === 1 ? 0 : (i / (h.length - 1)) * 100;
+    const y = 38 - ((v - min) / range) * 36;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  card.el.querySelector('polyline').setAttribute('points', pts);
+}
+
+function flash(el, dir) {
+  if (!dir) return;
+  const cls = dir > 0 ? 'up' : 'down';
+  el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), 400);
+}
+
+function render(e) {
+  empty.hidden = true;
+  const card = cards[e.symbol] ??= makeCard(e.symbol);
+  const price = Number(e.price);
+  const dir = card.prev === null ? 0 : Math.sign(price - card.prev);
+  card.history.push(price);
+  if (card.history.length > MAX_POINTS) card.history.shift();
+  card.el.querySelector('.price').textContent = money.format(price);
+  if (card.prev !== null && card.prev !== price) {
+    const pct = (price - card.prev) / card.prev * 100;
+    const chg = card.el.querySelector('.chg');
+    chg.textContent = (pct >= 0 ? '▲ ' : '▼ ') + Math.abs(pct).toFixed(2) + ' %';
+    chg.className = 'chg ' + (pct >= 0 ? 'up' : 'down');
+  }
+  card.el.querySelector('.time').textContent = new Date(e.timestamp).toLocaleTimeString();
+  drawSpark(card);
+  flash(card.el, dir);
+  card.prev = price;
+}
+
+const source = new EventSource('/api/prices/stream');
+source.addEventListener('price', (ev) => render(JSON.parse(ev.data)));
+source.onopen = () => { dot.classList.add('on'); statusText.textContent = 'En vivo'; };
+source.onerror = () => { dot.classList.remove('on'); statusText.textContent = 'Reconectando…'; };
+</script>
+</body>
+</html>
