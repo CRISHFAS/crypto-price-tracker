@@ -18,6 +18,9 @@ public class PriceStreamListener {
     @KafkaListener(topics = KafkaConfig.TOPIC_RAW, groupId = "price-stream",
                    properties = "auto.offset.reset=latest")
     public void onPrice(PriceEvent event) {
+        if (event.price() == null || event.price().signum() <= 0) {
+            return; // el panel ignora datos inválidos; el DLT lo gestiona el otro grupo
+        }
         stream.broadcast(event);
     }
 }

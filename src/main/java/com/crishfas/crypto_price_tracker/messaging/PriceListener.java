@@ -17,5 +17,8 @@ public class PriceListener {
     public void onPrice(ConsumerRecord<String, PriceEvent> record) {
         PriceEvent e = record.value();
         log.info("[partición {} | offset {}] {} = {}", record.partition(), record.offset(), e.symbol(), e.price());
+        if (e.price() == null || e.price().signum() <= 0) {
+            throw new IllegalArgumentException("Precio inválido para " + e.symbol() + ": " + e.price());
+        }
     }
 }
