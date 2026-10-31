@@ -71,6 +71,7 @@ Las cabeceras `kafka_dlt-*` indican la excepción, el topic, la partición y el 
 ## Problemas encontrados
 
 - El sufijo por defecto del Dead Letter Topic es `-dlt`, y un nombre distinto pasó desapercibido porque Kafka creó otro topic automáticamente.
+- Un mensaje que no era JSON bloqueaba el consumidor en bucle (26 MB de log en menos de un minuto); se resolvió con ErrorHandlingDeserializer y un DLT que guarda los bytes originales.
 
 ## Licencia
 
