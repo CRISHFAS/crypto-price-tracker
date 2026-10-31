@@ -71,7 +71,6 @@ Las cabeceras `kafka_dlt-*` indican la excepción, el topic, la partición y el 
 ## Problemas encontrados
 
 - El sufijo por defecto del Dead Letter Topic es `-dlt`, y un nombre distinto pasó desapercibido porque Kafka creó otro topic automáticamente.
-- Un 404 en el navegador era caché: `curl` local devolvía 200 y bastó una recarga forzada.
 
 ## Licencia
 
