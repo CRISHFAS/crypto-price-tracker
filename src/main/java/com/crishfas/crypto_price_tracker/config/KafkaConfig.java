@@ -21,6 +21,7 @@ public class KafkaConfig {
 
     public static final String TOPIC_RAW = "prices.raw";
     public static final String TOPIC_RAW_DLT = "prices.raw-dlt";
+    public static final String TOPIC_PROCESSED = "prices.processed";
 
     /** Se crea al arrancar si no existe. 1 réplica porque en local hay un solo broker. */
     @Bean
@@ -32,6 +33,12 @@ public class KafkaConfig {
     @Bean
     NewTopic pricesRawDltTopic() {
         return TopicBuilder.name(TOPIC_RAW_DLT).partitions(3).replicas(1).build();
+    }
+
+    /** Salida del procesador: misma clave (símbolo) y mismas particiones que prices.raw para conservar el orden por símbolo. */
+    @Bean
+    NewTopic pricesProcessedTopic() {
+        return TopicBuilder.name(TOPIC_PROCESSED).partitions(3).replicas(1).build();
     }
 
     /**
