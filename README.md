@@ -1,8 +1,10 @@
 # Crypto Price Tracker
 
+[![CI](https://github.com/CRISHFAS/crypto-price-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/CRISHFAS/crypto-price-tracker/actions/workflows/ci.yml)
+
 Micro app de **arquitectura orientada a eventos** con Spring Boot y Apache Kafka. Un simulador publica precios de criptomonedas en un topic de Kafka; tres consumidores independientes los procesan: uno registra cada precio y aplica reintentos con **Dead Letter Topic**, otro los reenvía en vivo a un panel web mediante **Server-Sent Events**, y un tercero calcula la variación porcentual y la publica en un segundo topic, `prices.processed`.
 
-> **Estado:** en desarrollo. Funcionan el flujo completo, el panel en vivo, la tolerancia a fallos y el procesador de variaciones. Pendiente: tests con Testcontainers, CI, API real de precios y despliegue.
+> **Estado:** en desarrollo. Funcionan el flujo completo, el panel en vivo, la tolerancia a fallos y el procesador de variaciones, con tests de integración (Testcontainers) y CI en cada push. Pendiente: API real de precios, carpeta `docs/` y despliegue.
 
 ## Arquitectura
 
@@ -34,7 +36,7 @@ El grupo `price-analytics` lee `prices.raw` (solo mensajes nuevos, `latest`), ca
 - **Primer precio de cada símbolo:** se publica con `previousPrice` y `changePercent` en `null`.
 - **Orden de las operaciones:** leer el precio previo, publicar y esperar la confirmación del broker (hasta 10 s) y solo entonces confirmar el estado. Si la publicación falla, se lanza una excepción, se reintenta (4 intentos) y el mensaje acaba en `prices.raw-dlt`; el estado no avanza, así que el reintento recalcula lo mismo.
 - **Precios no positivos:** el procesador los descarta sin publicar; los aparca en el DLT el grupo `price-processor`.
-- **Tests:** `./mvnw test` ejecuta 13 pruebas unitarias del analizador y 1 de contexto.
+- **Tests:** `./mvnw test` ejecuta 17 pruebas: 13 unitarias del analizador y 4 de integración con un Kafka efímero (Testcontainers), que necesitan Docker.
 
 Para ver los eventos procesados:
 
