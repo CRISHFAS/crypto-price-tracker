@@ -4,13 +4,15 @@
 
 Micro app de **arquitectura orientada a eventos** con Spring Boot y Apache Kafka. Un simulador publica precios de criptomonedas en un topic de Kafka; tres consumidores independientes los procesan: uno registra cada precio y aplica reintentos con **Dead Letter Topic**, otro los reenvía en vivo a un panel web mediante **Server-Sent Events**, y un tercero calcula la variación porcentual y la publica en un segundo topic, `prices.processed`.
 
-> **Estado:** en desarrollo. Funcionan el flujo completo, el panel en vivo, la tolerancia a fallos y el procesador de variaciones, con tests de integración (Testcontainers) y CI en cada push. Pendiente: API real de precios, carpeta `docs/` y despliegue.
+> **Estado:** en desarrollo. Funcionan el flujo completo, el panel en vivo, la tolerancia a fallos y el procesador de variaciones, con tests de integración (Testcontainers), CI en cada push y precios reales opcionales de Kraken. Pendiente: carpeta `docs/`, GIF del panel y despliegue.
 
 ## Arquitectura
 
 ```mermaid
 flowchart LR
   S[Simulador de precios] --> P[PricePublisher]
+  KR[Kraken WebSocket v2 - opcional] --> KF[KrakenPriceFeed]
+  KF --> P
   P -->|clave = símbolo| K[(Kafka: prices.raw, 3 particiones)]
   K -->|grupo price-processor| L[PriceListener]
   K -->|grupo price-stream| SL[PriceStreamListener]
@@ -43,6 +45,20 @@ Para ver los eventos procesados:
 ```bash
 docker exec kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic prices.processed --from-beginning --max-messages 5 --timeout-ms 10000 --formatter-property print.key=true
 ```
+
+## Precios reales de Kraken (opcional)
+
+Por defecto los precios los genera el simulador. Con Kraken encendido, la aplicación se suscribe al canal público `ticker` del WebSocket v2 de Kraken (`wss://ws.kraken.com/v2`, sin clave) para BTC/USD, ETH/USD y SOL/USD y publica en `prices.raw` el último precio de cada operación:
+
+```bash
+APP_SIMULATOR_ENABLED=false APP_KRAKEN_ENABLED=true ./mvnw spring-boot:run
+```
+
+- **Qué se publica:** el campo `last` de cada ticker, con la hora del propio dato. Se descartan los mensajes que no son tickers y los precios ausentes o no positivos. Solo se aceptan pares en USD.
+- **Resiliencia:** si la conexión falla, reconecta con una espera que se duplica (1 s, 2 s, 4 s... hasta un máximo de 60 s) y, si pasan 60 s sin ningún mensaje, fuerza la reconexión.
+- **Comprobado:** el precio de BTC que mostró la aplicación coincidió con el de la API REST de Kraken, y en una muestra de un minuto llegaron unos 88 mensajes (alrededor de 1,5 por segundo).
+- **Sin probar:** reconectar con una conexión viva que se rompe. Con una dirección inválida sí se comprobó la espera creciente hasta el tope.
+- **Datos de mercado:** antes de publicar una demo con precios reales hay que leer los términos de uso de Kraken.
 
 ## Tecnologías
 

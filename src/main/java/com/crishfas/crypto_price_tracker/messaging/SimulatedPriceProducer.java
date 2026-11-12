@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Genera precios simulados cada 2 s. Más adelante se reemplaza por una API real. */
+/** Genera precios simulados cada 2 s. Es el origen por defecto; los precios reales de Kraken están en KrakenPriceFeed (app.kraken.enabled). */
 @Component
 @ConditionalOnProperty(name = "app.simulator.enabled", havingValue = "true")
 public class SimulatedPriceProducer {
