@@ -38,7 +38,7 @@ El grupo `price-analytics` lee `prices.raw` (solo mensajes nuevos, `latest`), ca
 - **Primer precio de cada símbolo:** se publica con `previousPrice` y `changePercent` en `null`.
 - **Orden de las operaciones:** leer el precio previo, publicar y esperar la confirmación del broker (hasta 10 s) y solo entonces confirmar el estado. Si la publicación falla, se lanza una excepción, se reintenta (4 intentos) y el mensaje acaba en `prices.raw-dlt`; el estado no avanza, así que el reintento recalcula lo mismo.
 - **Precios no positivos:** el procesador los descarta sin publicar; los aparca en el DLT el grupo `price-processor`.
-- **Tests:** `./mvnw test` ejecuta 17 pruebas: 13 unitarias del analizador y 4 de integración con un Kafka efímero (Testcontainers), que necesitan Docker.
+- **Tests:** `./mvnw test` ejecuta 46 pruebas: 42 unitarias y 4 de integración con un Kafka efímero (Testcontainers), que necesitan Docker.
 
 Para ver los eventos procesados:
 
