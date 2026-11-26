@@ -114,6 +114,15 @@ Las cabeceras `kafka_dlt-*` indican la excepción, el topic, la partición y el 
 - Un mensaje que no era JSON bloqueaba el consumidor en bucle (26 MB de log en menos de un minuto); se resolvió con ErrorHandlingDeserializer y un DLT que guarda los bytes originales.
 - Al reanudar un codespace detenido, Kafka no arrancó solo: `docker exec` fallaba con «container is not running» y la app, arrancada sin broker, llenó el log (16,5 MB, 2457 avisos de conexión) mientras `/actuator/health` seguía en 200. Se resolvió con `docker compose up -d` y comprobando los offsets antes de arrancar la app. Causa probable, no verificada: la parada del codespace.
 
+## Documentación
+
+- [Arquitectura](docs/arquitectura.md): diagrama, topics, grupos, paquetes y configuración.
+- [Flujo de eventos](docs/flujo-de-eventos.md): recorrido de un precio, los dos eventos y los casos de fallo.
+- [Decisiones de diseño](docs/decisiones.md): qué se eligió y por qué.
+- [Cómo escalarlo](docs/escalabilidad.md): límites actuales y camino a producción.
+- [Casos de uso](docs/casos-de-uso.md): qué se puede hacer y cómo comprobarlo.
+- [Problemas encontrados](docs/TROUBLESHOOTING.md): síntoma, causa, solución y prevención.
+
 ## Licencia
 
 MIT
